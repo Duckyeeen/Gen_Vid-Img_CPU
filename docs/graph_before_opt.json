@@ -1,0 +1,73 @@
+{
+    "model": "wan2gp",
+    "nodes": {
+        "input_act": {
+            "type": "Parameter",
+            "name": "Activation_Input (X)",
+            "shape": [
+                128,
+                1024
+            ]
+        },
+        "weight_linear": {
+            "type": "Parameter",
+            "name": "Linear_Weight (W)",
+            "shape": [
+                1024,
+                1024
+            ]
+        },
+        "matmul_op": {
+            "type": "CNode",
+            "name": "MatMul",
+            "inputs": [
+                "input_act",
+                "weight_linear"
+            ]
+        },
+        "bias_op": {
+            "type": "CNode",
+            "name": "BiasAdd",
+            "inputs": [
+                "matmul_op"
+            ]
+        },
+        "transpose_op": {
+            "type": "CNode",
+            "name": "Transpose",
+            "inputs": [
+                "bias_op"
+            ]
+        },
+        "softmax_op": {
+            "type": "CNode",
+            "name": "Softmax",
+            "inputs": [
+                "transpose_op"
+            ]
+        }
+    },
+    "edges": [
+        {
+            "source": "input_act",
+            "target": "matmul_op"
+        },
+        {
+            "source": "weight_linear",
+            "target": "matmul_op"
+        },
+        {
+            "source": "matmul_op",
+            "target": "bias_op"
+        },
+        {
+            "source": "bias_op",
+            "target": "transpose_op"
+        },
+        {
+            "source": "transpose_op",
+            "target": "softmax_op"
+        }
+    ],
+    "passes_applied": []
+}

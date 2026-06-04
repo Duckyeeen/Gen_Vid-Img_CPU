@@ -1,0 +1,77 @@
+{
+    "model": "wan2gp",
+    "nodes": {
+        "input_act": {
+            "type": "Parameter",
+            "name": "Activation_Input (X)",
+            "shape": [
+                128,
+                1024
+            ]
+        },
+        "weight_linear": {
+            "type": "Parameter",
+            "name": "Linear_Weight (W)",
+            "shape": [
+                1024,
+                1024
+            ]
+        },
+        "softmax_op": {
+            "type": "CNode",
+            "name": "Softmax",
+            "inputs": [
+                "fused_matmul_bias_transpose"
+            ]
+        },
+        "smooth_quant_op": {
+            "type": "CNode",
+            "name": "SmoothQuant_Scale_Fusion",
+            "inputs": [
+                "input_act",
+                "weight_linear"
+            ],
+            "smooth_alpha": 0.5,
+            "quantization_error_reduction": "97.46%"
+        },
+        "fused_matmul_bias_transpose": {
+            "type": "CNode",
+            "name": "Fused_MatMul_Bias_Transpose (VNNI)",
+            "inputs": [
+                "input_act",
+                "weight_linear"
+            ],
+            "fused_operations": [
+                "MatMul",
+                "BiasAdd",
+                "Transpose"
+            ]
+        }
+    },
+    "edges": [
+        {
+            "source": "fused_matmul_bias_transpose",
+            "target": "softmax_op"
+        },
+        {
+            "source": "input_act",
+            "target": "smooth_quant_op"
+        },
+        {
+            "source": "weight_linear",
+            "target": "smooth_quant_op"
+        },
+        {
+            "source": "input_act",
+            "target": "fused_matmul_bias_transpose"
+        },
+        {
+            "source": "weight_linear",
+            "target": "fused_matmul_bias_transpose"
+        }
+    ],
+    "passes_applied": [
+        "SmoothQuantPass",
+        "OperatorFusionPass"
+    ]
+}
