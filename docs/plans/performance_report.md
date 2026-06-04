@@ -8,11 +8,11 @@ Báo cáo này được tự động tạo bởi `benchmark_runner.py` trên CPU
 
 | Phân đoạn Pipeline Wan2.1 | Baseline FP32 (giây) | Optimized CPU (giây) | Hệ số Tăng tốc (Speedup) | Kỹ thuật Tối ưu Áp dụng |
 | :--- | :---: | :---: | :---: | :--- |
-| **1. Text Encoder (T5-XXL)** | 1.4833s | 0.3640s | **4.08x** | Lượng tử hóa Weight-Only INT8, Giảm RAM 4 lần |
-| **2. DiT Denoising Loop** | 3.4655s | 1.1865s | **2.92x** | AVX-512 VNNI / AVX2 Fallback, FlashAttention L2 Tiling |
-| **3. VAE Decoder (Conv3D)** | 3.1420s | 0.8253s | **3.81x** | NCDHWc Memory Layout, Conv3D Operator Fusion |
-| **TỔNG CỘNG THỜI GIAN** | **8.0909s** | **2.3758s** | **3.41x** | **Tối ưu hóa tích hợp hệ thống** |
+| **1. Text Encoder (T5-XXL)** | 1.3010s | 0.3498s | **3.72x** | Lượng tử hóa Weight-Only INT8, Giảm RAM 4 lần |
+| **2. DiT Denoising Loop** | 3.2063s | 1.1395s | **2.81x** | AVX-512 VNNI / AVX2 Fallback, FlashAttention L2 Tiling |
+| **3. VAE Decoder (Conv3D)** | 2.7042s | 0.7996s | **3.38x** | NCDHWc Memory Layout, Conv3D Operator Fusion |
+| **TỔNG CỘNG THỜI GIAN** | **7.2114s** | **2.2889s** | **3.15x** | **Tối ưu hóa tích hợp hệ thống** |
 
 ## Đánh giá:
-* Tổng thời gian render hình ảnh giảm từ **8.09 giây** xuống còn **2.38 giây** (Nhanh hơn **3.41 lần**).
+* Tổng thời gian render hình ảnh giảm từ **7.21 giây** xuống còn **2.29 giây** (Nhanh hơn **3.15 lần**).
 * Tải xử lý phân bổ mượt mà trên 4 nhân vật lý thực nhờ cơ chế Thread Pinning.

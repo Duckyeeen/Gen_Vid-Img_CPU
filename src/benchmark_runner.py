@@ -16,7 +16,8 @@ class WanBenchmarkRunner:
         print("=====================================================")
         print("    WAN2.1 CPU PERFORMANCE INTEGRATION BENCHMARK     ")
         print("=====================================================")
-        self.config_path = "/Volumes/data2/DU_AN/wan2gp_cpu/Gen_Vid-Img_CPU/docs/plans/device_config.json"
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.config_path = os.path.join(base_dir, "docs", "plans", "device_config.json")
         
         # Load cấu hình
         self.config = self.load_device_config()
@@ -126,9 +127,11 @@ Báo cáo này được tự động tạo bởi `benchmark_runner.py` trên CPU
 * Tổng thời gian render hình ảnh giảm từ **{total_f32/1000.0:.2f} giây** xuống còn **{total_opt/1000.0:.2f} giây** (Nhanh hơn **{total_f32/total_opt:.2f} lần**).
 * Tải xử lý phân bổ mượt mà trên {self.config.get('optimal_thread_count', 4)} nhân vật lý thực nhờ cơ chế Thread Pinning.
 """
-        with open("/Volumes/data2/DU_AN/wan2gp_cpu/Gen_Vid-Img_CPU/docs/plans/performance_report.md", "w", encoding="utf-8") as f:
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        report_path = os.path.join(base_dir, "docs", "plans", "performance_report.md")
+        with open(report_path, "w", encoding="utf-8") as f:
             f.write(report_content)
-        print("[+] Đã xuất báo cáo hiệu năng thành công ra file: c:/GitHub/Gen_Vid-Img_CPU/docs/plans/performance_report.md")
+        print(f"[+] Đã xuất báo cáo hiệu năng thành công ra file: {report_path}")
 
 
 if __name__ == "__main__":

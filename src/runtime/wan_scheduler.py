@@ -15,7 +15,8 @@ class WanCPUScheduler:
         self.process = psutil.Process(os.getpid())
         self.num_logical_cores = psutil.cpu_count(logical=True)
         self.num_physical_cores = psutil.cpu_count(logical=False)
-        self.config_path = "/Volumes/data2/DU_AN/wan2gp_cpu/Gen_Vid-Img_CPU/docs/plans/device_config.json"
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.config_path = os.path.join(base_dir, "docs", "plans", "device_config.json")
         
         # Load cấu hình tự động thích ứng
         self.config = self.load_device_config()

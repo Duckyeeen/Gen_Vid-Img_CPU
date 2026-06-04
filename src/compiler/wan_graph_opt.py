@@ -4,6 +4,7 @@ Wan2.1 (wan2gp) Custom Graph Optimizer & SmoothQuant Simulator
 Mathematically models the activation-weight quantization and graph fusion passes.
 """
 
+import os
 import json
 import numpy as np
 
@@ -141,8 +142,11 @@ if __name__ == "__main__":
     optimizer = WanGraphOptimizer()
     optimizer.load_graph_from_mindspore()
     
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    docs_dir = os.path.join(base_dir, "docs")
+    
     # 1. Trực quan đồ thị ban đầu
-    optimizer.export_graph_to_json("/Volumes/data2/DU_AN/wan2gp_cpu/Gen_Vid-Img_CPU/docs/graph_before_opt.json")
+    optimizer.export_graph_to_json(os.path.join(docs_dir, "graph_before_opt.json"))
     
     # 2. Chạy SmoothQuant mô phỏng toán học
     optimizer.run_smoothquant_simulation(alpha=0.5)
@@ -151,4 +155,4 @@ if __name__ == "__main__":
     optimizer.run_operator_fusion_pass()
     
     # 4. Trực quan đồ thị sau tối ưu
-    optimizer.export_graph_to_json("/Volumes/data2/DU_AN/wan2gp_cpu/Gen_Vid-Img_CPU/docs/graph_after_opt.json")
+    optimizer.export_graph_to_json(os.path.join(docs_dir, "graph_after_opt.json"))

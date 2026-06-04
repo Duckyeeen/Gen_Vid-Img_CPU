@@ -1,7 +1,7 @@
 import gradio as gr
 import subprocess
 import os
-BASE_DIR = "/Volumes/data2/DU_AN/wan2gp_cpu/Gen_Vid-Img_CPU"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 def run_python_benchmark():
     try:
         env = os.environ.copy()
