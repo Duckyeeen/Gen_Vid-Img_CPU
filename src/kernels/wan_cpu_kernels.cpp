@@ -5,8 +5,10 @@
 #include <random>
 
 // Hỗ trợ tập lệnh SIMD Intrinsics
-#if defined(__x86_64__) || defined(_M_X64)
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
   #include <immintrin.h>
+#elif defined(__aarch64__) || defined(_M_ARM64)
+  #include <arm_neon.h>
 #endif
 
 class WanCPUKernels {
@@ -16,14 +18,14 @@ public:
         bool has_avx512f = false;
         bool has_vnni = false;
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))
         int cpuInfo[4];
         __cpuid(cpuInfo, 1);
         // Kiểm tra AVX2 hỗ trợ ở cấp độ OS/CPU
         __cpuidex(cpuInfo, 7, 0);
         has_avx512f = (cpuInfo[1] & (1 << 16)) != 0; // AVX512F (EBX, bit 16)
         has_vnni = (cpuInfo[2] & (1 << 11)) != 0;    // AVX512VNNI (ECX, bit 11)
-#elif defined(__GNUC__) || defined(__clang__)
+#elif (defined(__GNUC__) || defined(__clang__)) && (defined(__x86_64__) || defined(__i386__))
         unsigned int eax, ebx, ecx, edx;
         if (__get_cpuid_max(0, nullptr) >= 7) {
             __cpuid_count(7, 0, eax, ebx, ecx, edx);
@@ -43,13 +45,14 @@ public:
             for (int j = 0; j < N; ++j) {
                 int32_t acc = 0;
                 for (int k = 0; k < K; ++k) {
-                    acc += static_cast<int32_t>(A[i * K + k]) * static_cast<int32_t>(B[k * N + j]);
+                    acc += static_cast<int32_t>(A[i * K + k]) * static_cast<int32_t>(B[j * K + k]); // Assumes B is transposed (as SIMD kernels do)
                 }
                 C[i * N + j] = acc;
             }
         }
     }
 
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
     // 2. Nhân ma trận tối ưu bằng AVX-512 VNNI sử dụng intrinsics _mm512_dpbusd_epi32
     static void matmul_vnni_avx512(const uint8_t* A, const int8_t* B, int32_t* C, 
                                    int M, int N, int K) {
@@ -128,6 +131,45 @@ public:
             }
         }
     }
+
+#endif
+
+#if defined(__aarch64__) || defined(_M_ARM64)
+    // 4. Nhân ma trận tối ưu bằng ARM NEON (Dành cho Apple Silicon / ARM64)
+    static void matmul_neon_arm64(const uint8_t* A, const int8_t* B, int32_t* C, 
+                                  int M, int N, int K) {
+        for (int i = 0; i < M; ++i) {
+            for (int j = 0; j < N; ++j) {
+                int32x4_t acc = vdupq_n_s32(0);
+                
+                for (int k = 0; k < K; k += 16) {
+                    uint8x16_t a_vec = vld1q_u8(A + i * K + k);
+                    int8x16_t b_vec = vld1q_s8(B + j * K + k);
+                    
+                    int16x8_t a_low = vreinterpretq_s16_u16(vmovl_u8(vget_low_u8(a_vec)));
+                    int16x8_t a_high = vreinterpretq_s16_u16(vmovl_u8(vget_high_u8(a_vec)));
+                    
+                    int16x8_t b_low = vmovl_s8(vget_low_s8(b_vec));
+                    int16x8_t b_high = vmovl_s8(vget_high_s8(b_vec));
+                    
+                    int32x4_t prod1 = vmull_s16(vget_low_s16(a_low), vget_low_s16(b_low));
+                    int32x4_t prod2 = vmull_s16(vget_high_s16(a_low), vget_high_s16(b_low));
+                    
+                    int32x4_t prod3 = vmull_s16(vget_low_s16(a_high), vget_low_s16(b_high));
+                    int32x4_t prod4 = vmull_s16(vget_high_s16(a_high), vget_high_s16(b_high));
+                    
+                    acc = vaddq_s32(acc, prod1);
+                    acc = vaddq_s32(acc, prod2);
+                    acc = vaddq_s32(acc, prod3);
+                    acc = vaddq_s32(acc, prod4);
+                }
+                
+                int32_t sum = vaddvq_s32(acc);
+                C[i * N + j] = sum;
+            }
+        }
+    }
+#endif
 };
 
 int main() {
@@ -164,6 +206,7 @@ int main() {
     double time_scalar = std::chrono::duration<double, std::milli>(t1 - t0).count();
     std::cout << "      -> Thời gian thực thi Scalar: " << time_scalar << " ms" << std::endl;
 
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
     // 2. Chạy AVX2 Fallback
     std::cout << "\n[2/3] Đang đo đạc AVX2 Fallback Kernel..." << std::endl;
     t0 = std::chrono::high_resolution_clock::now();
@@ -196,5 +239,31 @@ int main() {
               << (correct ? "ĐẠT YÊU CẦU (PASS)" : "THẤT BẠI (FAIL)") << std::endl;
     std::cout << "=====================================================" << std::endl;
 
+#elif defined(__aarch64__) || defined(_M_ARM64)
+    // 2. Chạy ARM NEON Kernel (Dành cho Apple Silicon)
+    std::cout << "\n[2/2] Đang đo đạc ARM NEON Kernel..." << std::endl;
+    std::vector<int32_t> C_neon(M * N, 0);
+    t0 = std::chrono::high_resolution_clock::now();
+    WanCPUKernels::matmul_neon_arm64(A.data(), B.data(), C_neon.data(), M, N, K);
+    t1 = std::chrono::high_resolution_clock::now();
+    double time_neon = std::chrono::duration<double, std::milli>(t1 - t0).count();
+    std::cout << "      -> Thời gian thực thi ARM NEON: " << time_neon << " ms" << std::endl;
+    std::cout << "      -> Tốc độ tăng thêm (Speedup) so với Scalar: " << (time_scalar / time_neon) << "x" << std::endl;
+
+    // Xác minh độ chính xác toán học
+    bool correct = true;
+    for (int i = 0; i < M * N; ++i) {
+        if (C_scalar[i] != C_neon[i]) {
+            correct = false;
+            break;
+        }
+    }
+    std::cout << "\n=====================================================" << std::endl;
+    std::cout << "[*] Kiểm tra tính đúng đắn toán học: " 
+              << (correct ? "ĐẠT YÊU CẦU (PASS)" : "THẤT BẠI (FAIL)") << std::endl;
+    std::cout << "=====================================================" << std::endl;
+#endif
+
     return 0;
 }
+// test

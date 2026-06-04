@@ -15,7 +15,7 @@ class WanCPUScheduler:
         self.process = psutil.Process(os.getpid())
         self.num_logical_cores = psutil.cpu_count(logical=True)
         self.num_physical_cores = psutil.cpu_count(logical=False)
-        self.config_path = "c:/GitHub/Gen_Vid-Img_CPU/docs/plans/device_config.json"
+        self.config_path = "/Volumes/data2/DU_AN/wan2gp_cpu/Gen_Vid-Img_CPU/docs/plans/device_config.json"
         
         # Load cấu hình tự động thích ứng
         self.config = self.load_device_config()
@@ -45,6 +45,9 @@ class WanCPUScheduler:
         Khóa các luồng tính toán vào các lõi CPU vật lý dựa trên cấu hình tự động dò tìm.
         """
         print("[+] Đang thiết lập Core Affinity cho tiến trình...")
+        if not hasattr(self.process, 'cpu_affinity'):
+            print("[-] Hệ điều hành này không hỗ trợ thiết lập Core Affinity qua psutil (ví dụ macOS). Bỏ qua tính năng này.")
+            return False
         try:
             core_ids = self.config.get("affinity_cores", [0, 2, 4, 6])
             
@@ -76,12 +79,22 @@ class WanCPUScheduler:
         print(f"\n[*] Đang giám sát sử dụng CPU trong {duration_sec} giây...")
         start_time = time.time()
         step = 1
+        
+        has_affinity = hasattr(self.process, 'cpu_affinity')
+        try:
+            current_affinity = self.process.cpu_affinity() if has_affinity else []
+        except Exception:
+            current_affinity = []
+            
         while time.time() - start_time < duration_sec:
             cpu_percentages = psutil.cpu_percent(interval=interval, percpu=True)
             print(f"    [Đo đạc lần {step}] Sử dụng CPU trên từng core (%):")
             for idx, percent in enumerate(cpu_percentages):
                 bar = "#" * int(percent / 5)
-                tag = "(Real Core - PINNED)" if idx in self.process.cpu_affinity() else "(HyperThread - IDLE)"
+                if has_affinity:
+                    tag = "(Real Core - PINNED)" if idx in current_affinity else "(HyperThread - IDLE)"
+                else:
+                    tag = "(Core)"
                 print(f"      - Core {idx} {tag:22}: [{percent:5.1f}%] {bar}")
             step += 1
             print("-" * 50)

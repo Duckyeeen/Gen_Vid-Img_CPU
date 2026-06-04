@@ -142,7 +142,7 @@ if __name__ == "__main__":
     optimizer.load_graph_from_mindspore()
     
     # 1. Trực quan đồ thị ban đầu
-    optimizer.export_graph_to_json("c:/GitHub/Gen_Vid-Img_CPU/docs/graph_before_opt.json")
+    optimizer.export_graph_to_json("/Volumes/data2/DU_AN/wan2gp_cpu/Gen_Vid-Img_CPU/docs/graph_before_opt.json")
     
     # 2. Chạy SmoothQuant mô phỏng toán học
     optimizer.run_smoothquant_simulation(alpha=0.5)
@@ -151,4 +151,4 @@ if __name__ == "__main__":
     optimizer.run_operator_fusion_pass()
     
     # 4. Trực quan đồ thị sau tối ưu
-    optimizer.export_graph_to_json("c:/GitHub/Gen_Vid-Img_CPU/docs/graph_after_opt.json")
+    optimizer.export_graph_to_json("/Volumes/data2/DU_AN/wan2gp_cpu/Gen_Vid-Img_CPU/docs/graph_after_opt.json")
