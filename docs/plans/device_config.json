@@ -1,0 +1,18 @@
+{
+    "device_profile": "High-Performance Server/Workstation CPU",
+    "measured_gflops": 168.74,
+    "measured_ram_bandwidth_mbs": 5807.03,
+    "optimal_thread_count": 4,
+    "optimal_tiling_parameters": {
+        "B_m": 128,
+        "B_k": 64,
+        "B_n": 2048
+    },
+    "enable_avx512_vnni": true,
+    "affinity_cores": [
+        0,
+        2,
+        4,
+        6
+    ]
+}
